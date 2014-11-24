@@ -43,25 +43,27 @@ if __name__ == '__main__':
     print 'Will record ' + str(n_samples) + ' samples [' + str(len(t)*n_samples/1024/1024) + ' megabytes].'
     continue_choice = raw_input('Continue? <Y/n>: ')
     if continue_choice is 'n':
+        ser_port.close()
         sys.exit('Aborted capturing.')
 
-    # Capture the data
-    start_time = time.localtime()
-    data = []
-    ser_port.flushInput()
-    # Discard the first line
-    t = ser_port.readline()
-    for i in xrange(n_samples):
+    try:
+        # Capture the data
+        start_time = time.localtime()
+        data = []
+        ser_port.flushInput()
+        # Discard the first line
         t = ser_port.readline()
-        vals = map(float, t.split())
-        data.append(vals)
-    end_time = time.localtime()
-
-    # Write to file
-    filename = 'power-capture_' + time.strftime('%Y-%m-%d-%H:%M', start_time) + time.strftime('--%H:%M', end_time) + '.csv'
-    with open(filename, 'wb') as csvfile:
-        spamwriter = csv.writer(csvfile, delimiter=',',
-                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerows(data)
-
-    ser_port.close()
+        for i in xrange(n_samples):
+            t = ser_port.readline()
+            vals = map(float, t.split())
+            data.append([time.time()] + vals)
+    except KeyboardInterrupt:
+        print 'Interrupted by user.'
+    finally:
+        end_time = time.localtime()
+        # Write to file
+        filename = 'power-capture_' + time.strftime('%Y-%m-%d-%H:%M', start_time) + time.strftime('--%H:%M', end_time) + '.csv'
+        with open(filename, 'wb') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter=',')
+            spamwriter.writerows(data)
+        ser_port.close()
